@@ -25,22 +25,41 @@
 ;;; recursive approach
 
 (def next-stones-rec
-  (fn [step stone]
-    (let [nstep  (dec step)
-          digits (count (str stone))]
-      (cond
-        (zero? step)   1
-        (zero? stone)  (next-stones-rec nstep 1)
-        (even? digits) (let [n (/ digits 2)
-                             s (str stone)]
-                            (+ (next-stones-rec nstep (parse-long (subs s 0 n)))
-                               (next-stones-rec nstep (parse-long (subs s n)))))
-        :else          (next-stones-rec nstep (* stone 2024))))))
+  (memoize
+    (fn [step stone]
+      (let [nstep  (dec step)
+            digits (count (str stone))]
+        (cond
+          (zero? step)   1
+          (zero? stone)  (next-stones-rec nstep 1)
+          (even? digits) (let [n (/ digits 2)
+                               s (str stone)]
+                           (+ (next-stones-rec nstep (parse-long (subs s 0 n)))
+                              (next-stones-rec nstep (parse-long (subs s n)))))
+          :else          (next-stones-rec nstep (* stone 2024)))))))
 
 (defn eleven2 [steps stones]
   (reduce + (map #(next-stones-rec steps %) stones)))
 
+
+;;; Chris
+
+(defn grouping [xs n]
+  (transduce (map val) + 0
+    (reduce
+      (fn [counts _]
+        ;;#p counts
+        (apply merge-with +
+          (for [[n c] counts]
+            (let [xs (-next-stones n)
+                  f  (frequencies xs)]
+              (update-vals f #(* c %))))))
+      (zipmap xs (repeat 1))
+      (range n))))
+
 (comment
+  (grouping example 3)
+
   (def example (->> (slurp "example-11") (re-seq #"\d+") (mapv parse-long)))
   (def input (->> (slurp "input-11") (re-seq #"\d+") (mapv parse-long)))
 
@@ -55,7 +74,6 @@
   (eleven 25 input) ;; => 233050
   (time (eleven 25 input)) ;; => 233050
   (eleven2 25 example) ;; => 55312
-  (time (eleven2 75 input)) ;; => 233050
-
+  (time (eleven2 25 input)) ;; => 233050
   (time (eleven2 75 input)) ;; => 276661131175807
   )
