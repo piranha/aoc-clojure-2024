@@ -205,7 +205,7 @@
   (five-2 "input-5"))
 
 
-;;; day 6
+;;; six
 
 (def dirs6 {\^ :up
             \> :right
@@ -270,7 +270,7 @@
 
 (defn obs-locations [karta known]
   (for [[i [dir pos]] (map-indexed vector known)
-        :let  [_ #p [i pos dir]
+        :let  [;;_ #p [i pos dir]
                obs-pos (inc-pos (assoc karta :dir dir :pos pos))]
         :when (not (get-in karta [:obstacle obs-pos]))]
     (try
@@ -278,7 +278,7 @@
       nil
       (catch Exception e
         (when (:loop (ex-data e))
-          next-step)))))
+          obs-pos)))))
 
 (defn six2 [fname]
   (let [karta (parse6 (line-seq (io/reader fname)))
@@ -298,65 +298,61 @@
                   (assoc :dir :right :pos [24 26])))
   (get-in q [:obstacle [0 4]])
   (def fname "input-6")
-  (six "input-6")
-  (six2 "input-6"))
-
+  (six "input-6") ;; => 5564
+  (time (six2 "input-6")) ;; => 1976
+  )
 
 
 ;;; seven
 
-(def OPS [* +])
-(def OPS2 [* + (fn [x y]
-                 (parse-long (str x y)))])
+(defn combine [x y]
+  (let [n (loop [n 0 y y] (if (< y 10) (inc n) (recur (inc n) (quot y 10))))]
+    (+ (* x (int (Math/pow 10 n))) y)))
 
-(defn all-permutations [operators-list]
-  (if (empty? operators-list)
-    [[]]
-    (let [first-ops  (first operators-list)
-          rest-perms (all-permutations (rest operators-list))]
-      (for [op   first-ops
+(def OPS [* +])
+(def OPS2 [* + combine])
+
+(defn op-permutations [ops n]
+  (if (zero? n)
+    '(nil)
+    (let [rest-perms (op-permutations ops (dec n))]
+      (for [op   ops
             perm rest-perms]
         (cons op perm)))))
 
+(defn make-calcs [ops xs]
+  (let [n (dec (count xs))]
+    (for [perm (op-permutations ops n)]
+      (reduce
+        (fn [res [op n]]
+          (op res n))
+        (first xs)
+        (map vector perm (rest xs))))))
 
-(defn calc? [res xs OPS]
-  (let [n   (dec (count xs))
-        ops (repeat n OPS)]
-    (boolean
-      (some #(= res %)
-        (for [perm (all-permutations ops)
-              :let [[x & xs] xs]]
-          (reduce
-            (fn [res [op n]]
-              (op res n))
-            x
-            (map vector perm xs)))))))
+(defn calc? [ops res xs]
+  (some?
+    (some #(= res %) (make-calcs ops xs))))
 
-
-(defn run-seven [fname OPS]
+(defn run-seven [ops fname]
   (reduce +
     (for [line  (line-seq (io/reader fname))
           :let  [[res & xs] (->> (re-seq #"\d+" line)
-                                (map parse-long))]
-          :when (calc? res xs OPS)]
+                                 (map parse-long))]
+          :when (calc? ops res xs)]
       res)))
 
 (defn seven [fname]
-  (run-seven fname OPS))
+  (run-seven OPS fname))
 
 (defn seven2 [fname]
-  (run-seven fname OPS2))
+  (run-seven OPS2 fname))
 
 
 (comment
   (def fname "input-7")
   (seven fname) ;; => 303766880536
   (seven2 fname) ;; => 337041851384440
-  (calc? 190 [10 19])
-  (repeat 2 OPS)
-  (def xs [2 3 4])
-  (interleave xs [* +])
-  (all-permutations [[* +] [* +]]))
+  )
 
 
 ;;; eight
@@ -378,16 +374,21 @@
   (and (< -1 i size)
        (< -1 j size)))
 
-(defn make-antinodes [size [[ix jx] [iy jy]] multi?]
-  (let [di    (- ix iy)
-        dj    (- jx jy)
+(defn v+ [[i j] [di dj]]
+  [(+ i di) (+ j dj)])
+
+(defn v- [[i j] [di dj]]
+  [(- i di) (- j dj)])
+
+(defn make-antinodes [size [pos1 pos2] multi?]
+  (let [diff  (v- pos1 pos2)
         taker (if multi?
                 (take-while (partial in-bounds? size))
                 (comp (drop 1) (take 1) (filter (partial in-bounds? size))))]
     (concat
-      (->> (iterate (fn [[i j]] [(+ i di) (+ j dj)]) [ix jx])
+      (->> (iterate (fn [pos] (v+ pos diff)) pos1)
            (transduce taker conj []))
-      (->> (iterate (fn [[i j]] [(- i di) (- j dj)]) [iy jy])
+      (->> (iterate (fn [pos] (v- pos diff)) pos2)
            (transduce taker conj [])))))
 
 (defn -render-map8 [size karta]
