@@ -58,7 +58,12 @@
       (range n))))
 
 (comment
-  (grouping example 3)
+  (let [counts {125 1 11 1 17 1}]
+    (apply merge-with +
+      (for [[n c] counts]
+        (let [xs (-next-stones n)
+              f  (frequencies xs)]
+          (update-vals f #(* c %))))))
 
   (def example (->> (slurp "example-11") (re-seq #"\d+") (mapv parse-long)))
   (def input (->> (slurp "input-11") (re-seq #"\d+") (mapv parse-long)))
