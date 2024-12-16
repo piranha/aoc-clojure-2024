@@ -1,2 +1,6 @@
 {:paths ["."]
- :deps  {io.github.humbleui/humbleui {:git/sha "03f30f8e832899b35e807f2e02efcdedfab5401d"}}}
+ :deps  {io.github.humbleui/humbleui   {:git/sha "03f30f8e832899b35e807f2e02efcdedfab5401d"}
+         github-akovantsev/blet        {:git/url "https://github.com/akovantsev/blet"
+                                        :sha     "4fda0e358150370f581fb2a9d286b22be878b850"}
+         io.github.tonsky/sane-math    {:mvn/version "0.1.0"}
+         org.clojure/data.priority-map {:mvn/version "1.2.0"}}}

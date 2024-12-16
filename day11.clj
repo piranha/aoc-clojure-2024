@@ -1,17 +1,17 @@
-(ns day11)
+(ns day11
+  (:require [com.akovantsev.blet.core :refer [blet]]))
 
 (set! *warn-on-reflection* true)
 
 (defn -next-stones [stone]
-  (if (zero? stone)
-    [1]
-    (let [s      (str stone)
-          digits (count s)]
-      (if (even? digits)
-        (let [n (/ digits 2)]
-          [(parse-long (subs s 0 n))
-           (parse-long (subs s n))])
-        [(* stone 2024)]))))
+  (blet [s      (str stone)
+        digits (count s)
+        n      (/ digits 2)]
+    (cond
+      (zero? stone) [1]
+      (odd? digits) [(* stone 2024)]
+      :else         [(parse-long (subs s 0 n))
+                     (parse-long (subs s n))])))
 
 (defn next-stones [stones]
   (mapcat -next-stones stones))
