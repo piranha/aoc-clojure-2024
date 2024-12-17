@@ -51,19 +51,16 @@
 
 (defn exec-one [{:keys [pointer program A B C] :as ctx}]
   (when-let [[op arg] (get program pointer)]
-    ;;#p [op arg :A A :B B :C C]
-    (case op
-      :adv (let [arg (pow2 (combo ctx arg))]
-             (-> (nextp ctx) (assoc :A (quot A arg))))
-      :bdv (let [arg (pow2 (combo ctx arg))]
-             (-> (nextp ctx) (assoc :B (quot A arg))))
-      :cdv (let [arg (pow2 (combo ctx arg))]
-             (-> (nextp ctx) (assoc :C (quot A arg))))
-      :bxl (-> (nextp ctx) (assoc :B (bit-xor B arg)))
-      :bst (-> (nextp ctx) (assoc :B (mod (combo ctx arg) 8)))
-      :bxc (-> (nextp ctx) (assoc :B (bit-xor B C)))
-      :out (-> (nextp ctx) (update :out conj (mod (combo ctx arg) 8)))
-      :jnz (if (zero? A) (nextp ctx) (assoc ctx :pointer arg)))))
+    (let [c (combo ctx arg)]
+      (case op
+        :adv (-> (nextp ctx) (assoc :A (quot A (pow2 c))))
+        :bdv (-> (nextp ctx) (assoc :B (quot A (pow2 c))))
+        :cdv (-> (nextp ctx) (assoc :C (quot A (pow2 c))))
+        :bxl (-> (nextp ctx) (assoc :B (bit-xor B arg)))
+        :bst (-> (nextp ctx) (assoc :B (mod c 8)))
+        :bxc (-> (nextp ctx) (assoc :B (bit-xor B C)))
+        :out (-> (nextp ctx) (update :out conj (mod c 8)))
+        :jnz (if (zero? A) (nextp ctx) (assoc ctx :pointer arg))))))
 
 (defn exec [ctx]
   (->> (iterate exec-one ctx)
