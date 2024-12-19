@@ -1,7 +1,8 @@
 (ns aoc
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [clojure.math :as math]))
 
 ;;; utils
 
@@ -306,40 +307,29 @@
 ;;; seven
 
 (defn combine [x y]
-  (let [n (loop [n 0 y y] (if (< y 10) (inc n) (recur (inc n) (quot y 10))))]
-    (+ (* x (int (Math/pow 10 n))) y)))
+  (let [n (inc (int (math/log10 y)))]
+    (+ y (* x (int (math/pow 10 n))))))
 
 (def OPS [* +])
 (def OPS2 [* + combine])
 
-(defn op-permutations [ops n]
-  (if (zero? n)
-    '(nil)
-    (let [rest-perms (op-permutations ops (dec n))]
-      (for [op   ops
-            perm rest-perms]
-        (cons op perm)))))
-
-(defn make-calcs [ops xs]
-  (let [n (dec (count xs))]
-    (for [perm (op-permutations ops n)]
-      (reduce
-        (fn [res [op n]]
-          (op res n))
-        (first xs)
-        (map vector perm (rest xs))))))
-
-(defn calc? [ops res xs]
-  (some?
-    (some #(= res %) (make-calcs ops xs))))
+(defn calc? [ops answer [x & xs]]
+  (some #(= answer %)
+    (reduce
+      (fn [res x]
+        (for [op ops
+              r  res]
+          (op r x)))
+      [x]
+      xs)))
 
 (defn run-seven [ops fname]
   (reduce +
     (for [line  (line-seq (io/reader fname))
-          :let  [[res & xs] (->> (re-seq #"\d+" line)
-                                 (map parse-long))]
-          :when (calc? ops res xs)]
-      res)))
+          :let  [[answer & xs] (->> (re-seq #"\d+" line)
+                                    (map parse-long))]
+          :when (calc? ops answer xs)]
+      answer)))
 
 (defn seven [fname]
   (run-seven OPS fname))
@@ -350,8 +340,10 @@
 
 (comment
   (def fname "input-7")
-  (seven fname) ;; => 303766880536
-  (seven2 fname) ;; => 337041851384440
+  (seven "example-7") ;; => 3749
+  (seven "input-7") ;; => 303766880536
+  (seven2 "example-7") ;; => 11387
+  (user/time+ (seven2 "input-7")) ;; => 337041851384440
   )
 
 
